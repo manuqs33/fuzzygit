@@ -38,7 +38,7 @@ fg_echo() {
 
 fg_header() {
   printf "
-    \e[1m%s\e[0m 
+    \e[1m%s\e[0m
     \t%s
   " "${1}" "${2}"
 }
@@ -136,18 +136,10 @@ fg_add() {
   local preview header items
 
   # check if file is untracked; show pager in preview accordingly
-  preview="
-    if (git status -s -- {2..} | grep '^??') &>/dev/null; then
-      # diff with /dev/null for untracked files
-      git diff --no-index -- /dev/null {2..} | ${FG_VAR_GIT_PAGER}
-    elif (git status -s -- {2..} | grep '^[M|A][[:space:]]'); then
-      git diff --staged -- '{2..}' | ${FG_VAR_GIT_PAGER}
-    elif (\$(git status -s -- {2..})) &>/dev/null; then
-      # diff new name of renamed and modified files
-      git diff --staged -- '{-1}'
-    else
-      git diff -- '{2..}' | ${FG_VAR_GIT_PAGER}
-    fi"
+
+  scriptPath="$HOME/dotfiles_multios_dotter/add_preview_bash.sh"
+  preview="bash '$scriptPath' {} {-1}"
+
 
   header="$(fg_header \
     "git add -- <selected items>" \
@@ -495,7 +487,7 @@ fg_help() {
     environment."
   printf "  %s\n\n" "${envVarPreviewGitLog}"
 
-  local envVarLogPretty="FUZZYGIT_GIT_LOG_PRETTY_FORMAT - 
+  local envVarLogPretty="FUZZYGIT_GIT_LOG_PRETTY_FORMAT -
     [default: --pretty=format:%h - (%ar) %C(bold)%s%C(reset) - %aN%d]
     Set the pretty format to use when 'git log' is used in list of available
     items.
