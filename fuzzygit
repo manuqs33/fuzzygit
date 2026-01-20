@@ -103,30 +103,24 @@ fuzzygit() {
 # e.g. `-r` will list remote branches.
 #
 fg_switch() {
-  fg_isGitRepo || return 1
-
-  local preview header item
-
-  # get log of branches
-  preview="git log '${FG_GIT_LOG_PRETTY_FORMAT}' {1}"
-
-  header="$(fg_header \
-    "git switch <selected branch>" \
-    "Switch or checkout the branch.")"
-
-  item="$(git branch "${@:-"-v"}" |
-    fg_fzf_single --preview="${preview}" --header="${header}")"
-
-  # switch to branch if any
-  if [[ -n "${item}" ]]; then
-    echo "${item}" |
-    awk -F '([[:space:]]{2}|[[:space:]]*)' '{print $2}' |
-    xargs -I %branch git switch %branch
-  else
-    fg_echo "No branch has been selected."
-  fi
+    local branch
+    branch=$(select_branch)
+    if [ -n "$branch" ]; then
+        git switch "$branch"
+    else
+        fg_echo "No branch has been selected."
+    fi
 }
 
+fg_merge() {
+    local branch
+    branch=$(select_branch)
+    if [ -n "$branch" ]; then
+        git merge "$branch"
+    else
+        fg_echo "No branch has been selected."
+    fi
+}
 #
 # Shows a list of addable files and adds them to the staging area.
 #
@@ -497,4 +491,31 @@ fg_help() {
 
   printf "%s\n\n" "For further information see README.md or visit:
     <https://github.com/DennisBayer/fuzzygit>"
+}
+
+select_branch() {
+  # Build input list (exclude current branch line)
+  local fzf_input selected branch final_branch
+  fzf_input="$(git branch -a 2>/dev/null | grep -vE '^\*')"
+
+  selected="$(printf '%s\n' "$fzf_input" | fzf --height 40% --no-multi)"
+
+  # Exit if nothing selected
+  if [ -z "$selected" ]; then
+    printf '%s\n' "No branch selected." >&2
+    return 1
+  fi
+
+  # Clean up output: remove leading "* " if present and trim whitespace
+  branch="$selected"
+  branch="${branch#\* }"
+  branch="$(printf '%s' "$branch" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+
+  # Normalize remote branches like remotes/origin/feature/xyz -> feature/xyz
+  case "$branch" in
+    remotes/origin/*) final_branch="${branch#remotes/origin/}" ;;
+    *)                final_branch="$branch" ;;
+  esac
+
+  printf '%s\n' "$final_branch"
 }
