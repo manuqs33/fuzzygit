@@ -386,7 +386,7 @@ fg_branch() {
 # Command Line Completions
 # -----------------------------------------------------------------------------
 
-FG_COMPLETION_WORDS=("add" "branch" "cherry" "flog" "hash" "log" "restore" "switch" "unstage")
+FG_COMPLETION_WORDS=("add" "branch" "cherry" "flog" "hash" "log" "restore" "switch" "unstage" "merge" "rm" "show")
 
 _fg_completions_bash() {
   local IFS=$' \t\n'
@@ -491,6 +491,8 @@ fg_help() {
 
   printf "%s\n\n" "For further information see README.md or visit:
     <https://github.com/DennisBayer/fuzzygit>"
+
+
 }
 
 select_branch() {
@@ -519,3 +521,64 @@ select_branch() {
 
   printf '%s\n' "$final_branch"
 }
+function fuzzygit_status_replacement
+{
+    fzfArgs=(
+        '--nth' '2..,..'
+    )
+    items=$(git status -su)
+    selectedItems=$(printf '%s\n' "$items" | fzf "${fzfArgs[@]}")
+    mapfile -t trimmed < <(printf '%s\n' "$selectedItems" | sed -E "$FG_GIT_STATUS_PATTERN")
+    printf '%s\n' "${trimmed[@]}"
+}
+
+function fg_rm()
+{
+    fuzzygit_status_replacement | while IFS= read -r line; do
+        rm "$line"
+    done
+}
+
+ # 'show'
+ # {
+ #     # Use glo to list commits, fzf to select, preview git show with delta
+ #     $commit = glo | fzf --ansi --preview 'git show --color=always {1} | delta' --header 'Select a commit to show'
+ #     if ($commit)
+ #     {
+ #         $shortHash = $commit -split ' ' | Select-Object -First 1
+ #         git show $shortHash | delta
+ #     }
+ # }
+
+function fg_show() {
+    local commit preview header item
+
+    preview="git show --color=always {1} | delta"
+
+    header="$(fg_header \
+      "git show <selected commit>" \
+      "Shows the details of the selected commit.")"
+
+    item="$(glo | fg_fzf_single --preview="${preview}" --header="${header}")"
+
+    # show the commit details of the selected commit
+    if [[ -n "${item}" ]]; then
+      echo "${item}" | awk '{print $1}' | xargs -t -I %commitHash% git show %commitHash% | delta
+    else
+      fg_echo "No commit has been selected."
+    fi
+}
+# function fuzzygit_status_replacement
+# {
+#     $fzfArgs = @(
+#         '--nth', '2..,..'
+#     )
+#     $items = git status -su
+#     $selectedItems = $items | fzf $fzfArgs
+#     [string[]]$trimmed = $selectedItems | ForEach-Object { $_ | sed $FG_GIT_STATUS_PATTERN }
+#     return $trimmed
+# }
+# 'rm'
+# {
+#     fuzzygit_status_replacement | ForEach-Object { Remove-Item $_.Trim('"') }
+# }
