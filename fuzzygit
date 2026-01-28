@@ -131,7 +131,7 @@ fg_add() {
 
   # check if file is untracked; show pager in preview accordingly
 
-  scriptPath="$HOME/dotfiles_multios_dotter/add_preview_bash.sh"
+  scriptPath="$HOME/dotfiles_multios_dotter/fg-previews/add_preview_bash.sh"
   preview="bash '$scriptPath' {} {-1}"
 
 
