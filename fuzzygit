@@ -528,13 +528,14 @@ function fuzzygit_status_replacement
     )
     items=$(git status -su)
     selectedItems=$(printf '%s\n' "$items" | fzf "${fzfArgs[@]}")
-    mapfile -t trimmed < <(printf '%s\n' "$selectedItems" | sed -E "$FG_GIT_STATUS_PATTERN")
-    printf '%s\n' "${trimmed[@]}"
+    [ -z "$selectedItems" ] && return 0
+    printf '%s\n' "$selectedItems" | sed -E "$FG_GIT_STATUS_PATTERN"
 }
 
 function fg_rm()
 {
     fuzzygit_status_replacement | while IFS= read -r line; do
+        [ -z "$line" ] && continue
         rm "$line"
     done
 }
